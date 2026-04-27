@@ -14,7 +14,7 @@ load_dotenv()
 
 class ChatHost:
     def __init__(self):
-        self.mcp_clients: list[MCPClient] = [MCPClient("./weather_USA.py"), MCPClient("./weather_Israel.py")]
+        self.mcp_clients: list[MCPClient] = [MCPClient("./weather_USA.py"), MCPClient("./weather_Israel.py"), MCPClient("./rag_tool.py")]
         self.tool_clients: dict[str, tuple[MCPClient, str]] = {}
         self.clients_connected = False
         self.exit_stack = AsyncExitStack()
@@ -117,7 +117,16 @@ class ChatHost:
 
         config = types.GenerateContentConfig(
             tools=gemini_tools,
-            system_instruction="You are a weather assistant. When asked about weather in Israel, immediately call open_weather_forecast_israel, then enter_weather_forecast_city_israel with the city name, then select_weather_forecast_city_israel, then get_weather_forecast_israel to read the result. Do NOT ask for confirmation. Just call the tools in order.",
+            system_instruction=(
+                "You are a helpful assistant. "
+                "When asked about weather in Israel, immediately call open_weather_forecast_israel, "
+                "then enter_weather_forecast_city_israel with the city name, "
+                "then select_weather_forecast_city_israel, "
+                "then get_weather_forecast_israel to read the result. "
+                "When the user asks a question about the content of a web page or provides a URL, "
+                "call fetch_page_content with that URL and answer directly from the returned text. "
+                "Do NOT ask for confirmation. Just call the tools in order."
+            ),
         )
 
         response = self._generate(history, config)

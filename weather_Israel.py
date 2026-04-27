@@ -1,3 +1,4 @@
+import re
 from mcp.server.fastmcp import FastMCP
 from playwright.async_api import async_playwright
 
@@ -45,8 +46,33 @@ async def select_weather_forecast_city_israel() -> str:
 async def get_weather_forecast_israel() -> str:
     """Reads and returns the weather forecast content from the page after a city has been selected."""
     await _page.wait_for_load_state("networkidle")
-    forecast = await _page.inner_text("body")
-    return forecast
+
+    forecast = await _page.evaluate(
+        """() => {
+            const noise = [
+                'script', 'style', 'noscript', 'iframe',
+                'nav', 'header', 'footer', 'aside',
+                '[role="banner"]', '[role="navigation"]',
+                '[role="complementary"]', '[role="contentinfo"]',
+                '.ad', '.ads', '.advertisement', '.cookie-banner',
+            ];
+            noise.forEach(sel => {
+                document.querySelectorAll(sel).forEach(el => el.remove());
+            });
+
+            const container =
+                document.querySelector('main') ||
+                document.querySelector('article') ||
+                document.querySelector('[role="main"]') ||
+                document.body;
+
+            return container.innerText;
+        }"""
+    )
+
+    forecast = re.sub(r"[ \t]{2,}", " ", forecast)
+    forecast = re.sub(r"\n{3,}", "\n\n", forecast)
+    return forecast.strip()
 
 
 def main():
